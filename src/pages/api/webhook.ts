@@ -64,26 +64,19 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
   }
   const { text } = event.message;
   const userId = event.source.userId ?? 'dummy';
-  console.log(text, userId);
   let replyText = '';
   if (/^(クイズ|くいず|a|b|c|A|B|C|1|2|3)$/.test(text)) {
-    console.log(1);
     const histories = /^(クイズ|くいず)$/.test(text) ? [] : await getHistory(userId);
     const textForChatGPT = /^(クイズ|くいず)$/.test(text) ? 'クイズを出題してください。' : text;
     const newMessage:ChatCompletionRequestMessage = {role: 'user', content: textForChatGPT};
-    console.log(histories);
-    console.log(textForChatGPT);
     histories.push(newMessage);
-    console.log(histories);
     replyText = await fetchChatGPT(histories);
-    console.log(replyText);
     histories.push({role: 'assistant',content: replyText});
     // 直近５件を保存する
     await saveHistory(userId, histories.slice(-5));
   } else {
     replyText = '「クイズ」と言うとのんちゃんクイズが始まります。解答する場合は「a」のように送ってね';
   }
-  console.log(replyText);
   // LINE返信
   const replyObject: TextMessage = {
     type: 'text',
@@ -99,12 +92,10 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
-    middleware(lineConfig)(req, res, async () => {
-      const events = req.body.events;
-      for (const event of events) {
-        handleMessage(event);
-      }
-    });
+    const events = req.body.events;
+    for (const event of events) {
+      const hoge = await handleMessage(event);
+    }
     res.status(200).end();
   } else {
     res.status(405).end();
