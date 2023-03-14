@@ -73,7 +73,7 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
     replyText = await fetchChatGPT(histories);
     histories.push({role: 'assistant',content: replyText});
     // 直近５件を保存する
-    await saveHistory(userId, histories.slice(-5));
+    await saveHistory(userId, histories.slice(-3));
   } else {
     replyText = '「クイズ」と言うとのんちゃんクイズが始まります。解答する場合は「a」のように送ってね';
   }
