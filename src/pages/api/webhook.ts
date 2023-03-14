@@ -94,7 +94,7 @@ export default async function handler(
   if (req.method === 'POST') {
     const events = req.body.events;
     for (const event of events) {
-      const hoge = await handleMessage(event);
+      await handleMessage(event);
     }
     res.status(200).end();
   } else {
