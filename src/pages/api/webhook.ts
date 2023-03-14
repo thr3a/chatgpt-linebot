@@ -97,7 +97,7 @@ export default async function handler(
         handleMessage(event);
       }
     });
-    res.status(200).json({ name: 'John Doe' });
+    res.status(200).end();
   } else {
     res.status(405).end();
   }
