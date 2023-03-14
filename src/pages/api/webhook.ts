@@ -67,10 +67,14 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
   console.log(text, userId);
   let replyText = '';
   if (/^(クイズ|くいず|a|b|c|A|B|C|1|2|3)$/.test(text)) {
+    console.log(1);
     const histories = /^(クイズ|くいず)$/.test(text) ? [] : await getHistory(userId);
     const textForChatGPT = /^(クイズ|くいず)$/.test(text) ? 'クイズを出題してください。' : text;
     const newMessage:ChatCompletionRequestMessage = {role: 'user', content: textForChatGPT};
+    console.log(histories);
+    console.log(textForChatGPT);
     histories.push(newMessage);
+    console.log(histories);
     replyText = await fetchChatGPT(histories);
     console.log(replyText);
     histories.push({role: 'assistant',content: replyText});
@@ -79,6 +83,7 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
   } else {
     replyText = '「クイズ」と言うとのんちゃんクイズが始まります。解答する場合は「a」のように送ってね';
   }
+  console.log(replyText);
   // LINE返信
   const replyObject: TextMessage = {
     type: 'text',
