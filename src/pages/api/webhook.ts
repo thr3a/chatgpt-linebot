@@ -39,6 +39,7 @@ const getHistory = async (userId: string): Promise<ChatCompletionRequestMessage[
       return [];
     }
   } catch (error) {
+    console.error(error);
     return [];
   }
 };
