@@ -11,6 +11,7 @@ const lineConfig = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? 'xxx',
   channelSecret: process.env.LINE_CHANNEL_SECRET ?? 'xxx',
 };
+console.log(lineConfig);
 const client = new Client(lineConfig);
 
 const openAiConfig = new Configuration({
