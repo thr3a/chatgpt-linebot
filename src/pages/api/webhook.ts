@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Client, middleware, TextMessage, WebhookEvent, MessageAPIResponseBase } from '@line/bot-sdk';
 import {Configuration, OpenAIApi, ChatCompletionRequestMessage} from 'openai';
 import { getDatabase, ref, set, get } from 'firebase/database';
+import { BASE_PROMPT } from '@/constant/env';
 
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? 'xxx',
@@ -40,10 +41,11 @@ const getHistory = async (userId: string): Promise<ChatCompletionRequestMessage[
 };
 
 const fetchChatGPT = async (messages: ChatCompletionRequestMessage[]): Promise<string> => {
+  // 先頭に追加
   messages.unshift({
     role: 'system',
-    content: '日本語でしりとりをしてください。'
-  });
+    content: BASE_PROMPT
+  }); 
   const completion = await openai.createChatCompletion({
     model: 'gpt-3.5-turbo',
     messages: messages,
@@ -57,22 +59,27 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
     return;
   }
   const { text } = event.message;
-  console.log(text);
   const userId = event.source.userId ?? 'dummy';
-  const histories = await getHistory(userId);
-  const newMessage:ChatCompletionRequestMessage = {role: 'user', content: text};
-  histories.push(newMessage);
-  const replyText = await fetchChatGPT(histories);
-  histories.push({role: 'assistant',content: replyText});
-  await saveHistory(userId, histories);
-
+  let replyText = '';
+  if (/^(クイズ|a|b|c|A|B|C|1|2|3)$/.test(text)) {
+    const histories = await getHistory(userId);
+    const textForChatGPT = /^クイズ$/.test(text) ? 'クイズを出題してください' : text;
+    const newMessage:ChatCompletionRequestMessage = {role: 'user', content: textForChatGPT};
+    histories.push(newMessage);
+    replyText = await fetchChatGPT(histories);
+    histories.push({role: 'assistant',content: replyText});
+    // 直近５件を保存する
+    await saveHistory(userId, histories.slice(-5));
+  } else {
+    replyText = '「クイズ」と言うとのんちゃんクイズが始まります。解答する場合は「a」のように送ってね';
+  }
   // LINE返信
   const replyObject: TextMessage = {
     type: 'text',
     text: replyText
   };
   await client.replyMessage(event.replyToken, replyObject);
-  console.log(userId, replyText);
+  console.log(text, userId, replyText);
   
 };
 
