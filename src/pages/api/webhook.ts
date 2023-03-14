@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Client, middleware, TextMessage, WebhookEvent, MessageAPIResponseBase } from '@line/bot-sdk';
 import {Configuration, OpenAIApi} from 'openai';
+import { getApp } from 'firebase/app';
 
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || 'xxx',
@@ -27,10 +28,11 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
     return;
   }
   const { text } = event.message;
-  const replyText = await fetchChatGPT(text);
+  // const replyText = await fetchChatGPT(text);
+  const userId = event.source.userId;
   const replyObject: TextMessage = {
     type: 'text',
-    text: replyText
+    text: `userid: ${userId}`
   };
   await client.replyMessage(event.replyToken, replyObject);
 };
