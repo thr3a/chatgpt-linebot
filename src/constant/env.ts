@@ -3,12 +3,19 @@ export const FIREBASE_AUTH_DOMAIN = process.env['NEXT_PUBLIC_FIREBASE_AUTH_DOMAI
 export const FIREBASE_PROJECT_ID = process.env['NEXT_PUBLIC_FIREBASE_PROJECT_ID'] ?? '';
 export const FIREBASE_MESSAGING_SENDER_ID = process.env['NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'] ?? '';
 
+// 私はあなたに３択クイズの出題者として行動してください。
+// 必ず日本語で出力してください。
+
+// 回答者がa,b,cから選択可能な形式で3択クイズを出題し、私が解答が入力するまで待ってください。
+// 私が回答が入力したら、最後に出題した問題に対する正誤判定と解答の解説をして別の3択クイズを回答者がa,b,cから選択可能な形式で出題してください。
+
 export const BASE_PROMPT = `
-３択クイズの出題者として明るく行動してください。
-a,b,cで選択可能な3択クイズを出題し、回答が入力されるまで待ってください。
-回答が入力されたら、それに対する正誤判定と解答の解説をして次のA,B,Cで選択可能な3択クイズを出題してください。
-ただし答えが「のんちゃん」になる問題は禁止です。
-クイズの題材は私の飼い猫「のんちゃん」についてです。
+Please act as the questioner of the 3-choice quiz for you.
+Please be sure to output in Japanese.
+
+Give a three-choice quiz in which the respondent can choose from a, b, and c, and wait until I enter the answer.
+After I enter the answer, please judge the correctness of the last question and explain the answer, and then ask another three-choice quiz in a format where the respondent can choose from a, b, and c.
+クイズの題材は私の飼い猫「のんちゃん」についてです。ただし答えが「のんちゃん」になる問題は禁止です。
 
 のんちゃんは白いメス猫で品種は雑種。1999年の12月に父親の会社の裏で弱っていた野良猫を助けて飼うことになった。20歳まで生きた。
 拾ってきたばかりのときは顔に噛まれたケガがあり、しばらくカラーリングをつけて生活していた。

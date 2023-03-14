@@ -3,12 +3,15 @@ import { Client, middleware, TextMessage, WebhookEvent, MessageAPIResponseBase }
 import {Configuration, OpenAIApi, ChatCompletionRequestMessage} from 'openai';
 import { getDatabase, ref, set, get } from 'firebase/database';
 import { BASE_PROMPT } from '@/constant/env';
+import { initializeFirebaseApp } from '@/lib/firebase/firebase';
 
-const config = {
+initializeFirebaseApp();
+
+const lineConfig = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? 'xxx',
   channelSecret: process.env.LINE_CHANNEL_SECRET ?? 'xxx',
 };
-const client = new Client(config);
+const client = new Client(lineConfig);
 
 const openAiConfig = new Configuration({
   apiKey: process.env.OPENAI_APIKEY ?? 'xxx'
@@ -61,9 +64,9 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
   const { text } = event.message;
   const userId = event.source.userId ?? 'dummy';
   let replyText = '';
-  if (/^(クイズ|a|b|c|A|B|C|1|2|3)$/.test(text)) {
-    const histories = await getHistory(userId);
-    const textForChatGPT = /^クイズ$/.test(text) ? 'クイズを出題してください' : text;
+  if (/^(クイズ|くいず|a|b|c|A|B|C|1|2|3)$/.test(text)) {
+    const histories = /^(クイズ|くいず)$/.test(text) ? [] : await getHistory(userId);
+    const textForChatGPT = /^(クイズ|くいず)$/.test(text) ? 'クイズを出題してください。' : text;
     const newMessage:ChatCompletionRequestMessage = {role: 'user', content: textForChatGPT};
     histories.push(newMessage);
     replyText = await fetchChatGPT(histories);
@@ -88,12 +91,13 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
-    middleware(config)(req, res, async () => {
+    middleware(lineConfig)(req, res, async () => {
       const events = req.body.events;
       for (const event of events) {
         handleMessage(event);
       }
     });
+    res.status(200).end();
   } else {
     res.status(405).end();
   }

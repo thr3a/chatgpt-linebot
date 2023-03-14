@@ -5,9 +5,7 @@ import { Header } from '../features/common/components/Header';
 import { Container } from '@mantine/core';
 import { PageProvider } from '../features/common/contexts/PageContext';
 import { Notifications } from '@mantine/notifications';
-import { initializeFirebaseApp } from '@/lib/firebase/firebase';
 
-initializeFirebaseApp();
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
 
