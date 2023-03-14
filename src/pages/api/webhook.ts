@@ -64,6 +64,7 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
   }
   const { text } = event.message;
   const userId = event.source.userId ?? 'dummy';
+  console.log(text, userId);
   let replyText = '';
   if (/^(クイズ|くいず|a|b|c|A|B|C|1|2|3)$/.test(text)) {
     const histories = /^(クイズ|くいず)$/.test(text) ? [] : await getHistory(userId);
@@ -71,6 +72,7 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
     const newMessage:ChatCompletionRequestMessage = {role: 'user', content: textForChatGPT};
     histories.push(newMessage);
     replyText = await fetchChatGPT(histories);
+    console.log(replyText);
     histories.push({role: 'assistant',content: replyText});
     // 直近５件を保存する
     await saveHistory(userId, histories.slice(-5));
