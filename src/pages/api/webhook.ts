@@ -11,7 +11,6 @@ const lineConfig = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? 'xxx',
   channelSecret: process.env.LINE_CHANNEL_SECRET ?? 'xxx',
 };
-console.log(lineConfig);
 const client = new Client(lineConfig);
 
 const openAiConfig = new Configuration({
@@ -98,7 +97,7 @@ export default async function handler(
         handleMessage(event);
       }
     });
-    res.status(200).end();
+    res.status(200).json({ name: 'John Doe' });
   } else {
     res.status(405).end();
   }
