@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Client, middleware, TextMessage, WebhookEvent, MessageAPIResponseBase } from '@line/bot-sdk';
+import { Client, TextMessage, WebhookEvent, MessageAPIResponseBase } from '@line/bot-sdk';
 import {Configuration, OpenAIApi, ChatCompletionRequestMessage} from 'openai';
 import { getDatabase, ref, set, get } from 'firebase/database';
 import { BASE_PROMPT } from '@/constant/env';
