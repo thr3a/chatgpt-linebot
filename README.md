@@ -1,7 +1,5 @@
 # debug
 
-ngrok http 3000
-
 https://developers.line.biz/console/provider/1660724792
 
 ```
