@@ -11,7 +11,6 @@ import { ChatOpenAI } from 'langchain/chat_models';
 import { BufferMemory, ChatMessageHistory } from 'langchain/memory';
 import { ConversationChain } from 'langchain/chains';
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder, PromptTemplate } from 'langchain/prompts';
-import { LLMChain } from 'langchain/chains';
 initializeFirebaseApp();
 
 const lineConfig = {
@@ -23,7 +22,7 @@ const client = new Client(lineConfig);
 const chat = new ChatOpenAI({
   openAIApiKey: process.env.OPENAI_APIKEY,
   modelName: 'gpt-3.5-turbo',
-  // temperature: 0,
+  temperature: 1.1,
 });
 
 const getHistory = async (userId: string): Promise<ChatMessageHistory> => {
@@ -105,8 +104,19 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
     // }
   } else {
     const histories = await getHistory(userId);
+    const weather = await getWeather();
+    const SystemPrompt = await PromptTemplate.fromTemplate(BASE_PROMPT_GIRL).format({
+      now: dayjs().format('YYYY/MM/DD HH:mm dddd'),
+      today_weather: weather.today.weather,
+      today_max_temp: weather.today.max_temp,
+      tomorrow_weather: weather.tomorrow.weather,
+      tomorrow_max_temp: weather.tomorrow.max_temp
+    });
+    const HumanPrompt = await PromptTemplate.fromTemplate(GIRL_HUMAN_TEMPLATE).format({
+      human_message: text,
+    });
     const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-      SystemMessagePromptTemplate.fromTemplate(BASE_PROMPT_GIRL),
+      SystemMessagePromptTemplate.fromTemplate(SystemPrompt),
       new MessagesPlaceholder('history'),
       HumanMessagePromptTemplate.fromTemplate('{input}')
     ]);
@@ -114,15 +124,6 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
       returnMessages: true,
       memoryKey: 'history',
       chatHistory: histories
-    });
-    const weather = await getWeather();
-    const HumanPrompt = await PromptTemplate.fromTemplate(GIRL_HUMAN_TEMPLATE).format({
-      human_message: text,
-      now: dayjs().format('YYYY/MM/DD HH:mm dddd'),
-      today_weather: weather.today.weather,
-      today_max_temp: weather.today.max_temp,
-      tomorrow_weather: weather.tomorrow.weather,
-      tomorrow_max_temp: weather.tomorrow.max_temp
     });
     const chain = new ConversationChain({
       memory: memory,
