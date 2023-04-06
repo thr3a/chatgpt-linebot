@@ -2,16 +2,10 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Client, TextMessage, WebhookEvent, MessageAPIResponseBase } from '@line/bot-sdk';
 import {Configuration, OpenAIApi, ChatCompletionRequestMessage} from 'openai';
 import { getDatabase, ref, set, get, remove } from 'firebase/database';
-import { BASE_PROMPT_GIRL, WEATHER_CODES, GIRL_HUMAN_TEMPLATE } from '@/constant/env';
+import { BASE_PROMPT_GIRL, WEATHER_CODES } from '@/constant/env';
 import { initializeFirebaseApp } from '@/lib/firebase/firebase';
 import dayjs from 'dayjs';
 
-import { SystemChatMessage, HumanChatMessage, AIChatMessage, BaseChatMessage } from 'langchain/schema';
-import { ChatOpenAI } from 'langchain/chat_models';
-import { BufferMemory, ChatMessageHistory } from 'langchain/memory';
-import { ConversationChain } from 'langchain/chains';
-import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder, PromptTemplate } from 'langchain/prompts';
-import { LLMChain } from 'langchain/chains';
 initializeFirebaseApp();
 
 const lineConfig = {
@@ -20,11 +14,10 @@ const lineConfig = {
 };
 const client = new Client(lineConfig);
 
-const chat = new ChatOpenAI({
-  openAIApiKey: process.env.OPENAI_APIKEY,
-  modelName: 'gpt-3.5-turbo',
-  // temperature: 0,
+const openAiConfig = new Configuration({
+  apiKey: process.env.OPENAI_APIKEY ?? 'xxx'
 });
+const openai = new OpenAIApi(openAiConfig);
 
 const saveHistory = async (userId: string, histories: ChatCompletionRequestMessage[]) => {
   try {
@@ -62,6 +55,20 @@ const getHistory = async (userId: string): Promise<ChatCompletionRequestMessage[
   }
 };
 
+const fetchChatGPT = async (messages: ChatCompletionRequestMessage[]): Promise<string> => {
+  // 先頭に追加
+  messages.unshift({
+    role: 'system',
+    content: BASE_PROMPT_GIRL
+  }); 
+  const completion = await openai.createChatCompletion({
+    model: 'gpt-3.5-turbo',
+    messages: messages,
+  });
+  const text = completion.data.choices[0].message?.content as string;
+  return text;
+};
+
 const getWeather = async() => {
   const url = 'https://api.open-meteo.com/v1/forecast?latitude=35.64&longitude=139.70&daily=weathercode,temperature_2m_max&forecast_days=2&timezone=Asia%2FTokyo';
   const response = await fetch(url);
@@ -84,56 +91,34 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
   }
   const { text } = event.message;
   const userId = event.source.userId ?? 'dummy';
-  let botReplyText = '';
+  let replyText = '';
   if (/^クリア$/.test(text)) {
     await clearHistory(userId);
-    botReplyText = 'クリアしました';
-  } else if (/^統計$/.test(text)) {
-    // const histories = await getHistory(userId);
-    // if (histories.length > 0) {
-    //   botReplyText = histories[0].content;
-    // }
+    replyText = 'クリアしました';
   } else {
-    // const histories = await getHistory(userId);
-    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-      SystemMessagePromptTemplate.fromTemplate(BASE_PROMPT_GIRL),
-      new MessagesPlaceholder('history'),
-      HumanMessagePromptTemplate.fromTemplate('{input}')
-    ]);
-    const histories = [
-      new HumanChatMessage('しりとりしよう。りんご'),
-      new AIChatMessage('いいですわ。ゴリラ'),
-    ];
-    const memory = new BufferMemory({
-      returnMessages: true,
-      memoryKey: 'history',
-      chatHistory: new ChatMessageHistory(histories)
-    });
+    const histories = await getHistory(userId);
     const weather = await getWeather();
-    const HumanPrompt = await PromptTemplate.fromTemplate(GIRL_HUMAN_TEMPLATE).format({
-      human_message: text,
-      now: dayjs().format('YYYY/MM/DD HH:mm dddd'),
-      today_weather: weather.today.weather,
-      today_max_temp: weather.today.max_temp,
-      tomorrow_weather: weather.tomorrow.weather,
-      tomorrow_max_temp: weather.tomorrow.max_temp
-    });
-    const chain = new ConversationChain({
-      memory: memory,
-      prompt: chatPrompt,
-      llm: chat,
-    });
-    const response = await chain.call({input: HumanPrompt});
-    console.log(response);
-    botReplyText = response.text;
+    const myText = `
+現在の日時:${dayjs().format('YYYY/MM/DD HH:mm dddd')}
+今日の天気:${weather.today.weather} 最高気温:${weather.today.max_temp}
+明日の天気:${weather.tomorrow.weather} 最高気温:${weather.tomorrow.max_temp}
+私のチャット:${text}
+Chatbotのチャット:`;
+    const newMessage:ChatCompletionRequestMessage = {role: 'user', content: myText};
+    histories.push(newMessage);
+    replyText = await fetchChatGPT(histories);
+    histories.push({role: 'assistant',content: replyText});
+    // 直近５件を保存する
+    await saveHistory(userId, histories.slice(-5));
   }
   // LINE返信
   const replyObject: TextMessage = {
     type: 'text',
-    text: botReplyText
+    text: replyText
   };
-  console.log(text, userId, botReplyText);
   await client.replyMessage(event.replyToken, replyObject);
+  console.log(text, userId, replyText);
+  
 };
 
 export default async function handler(

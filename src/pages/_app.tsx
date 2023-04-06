@@ -1,9 +1,7 @@
 import { AppProps } from 'next/app';
 import Head from 'next/head';
 import { MantineProvider } from '@mantine/core';
-import { Header } from '../features/common/components/Header';
 import { Container } from '@mantine/core';
-import { PageProvider } from '../features/common/contexts/PageContext';
 import { Notifications } from '@mantine/notifications';
 
 export default function App(props: AppProps) {
@@ -19,12 +17,9 @@ export default function App(props: AppProps) {
       </Head>
       <MantineProvider>
         <Notifications />
-        <PageProvider>
-          <Container>
-            <Header></Header>
-            <Component {...pageProps} />
-          </Container>
-        </PageProvider>
+        <Container>
+          <Component {...pageProps} />
+        </Container>
       </MantineProvider>
     </>
   );

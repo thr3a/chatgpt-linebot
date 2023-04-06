@@ -1,36 +1,54 @@
-export const WEATHER_CODES: { [key: number]: string } = {
-  0: '晴れ',
-  1: '大部分晴れ',
-  2: '一部曇り',
-  3: '曇り',
-  45: '霧',
-  48: '結露性霧',
-  51: '小雨',
-  53: '中程度の雨',
-  55: '強い雨',
-  56: '軽い凍雨',
-  57: '強い凍雨',
-  61: 'わずかな雨',
-  63: '中程度の雨',
-  65: '大雨',
-  66: '軽い着氷性の雨',
-  67: '激しい着氷性の雨',
-  71: 'わずかな雪',
-  73: '中程度の雪',
-  75: '大雪',
-  77: '雪片',
-  80: '小雨のにわか雨',
-  81: '中程度のにわか雨',
-  82: '大雨のにわか雨',
-  85: '小雪のにわか雪',
-  86: '大雪のにわか雪',
-  95: 'わずかから中程度の雷雨',
-  96: 'ひょうの降る雷雨',
-  99: '大ぶりのひょうを伴う雷雨'
+// import { OpenAI } from 'langchain/llms';
+import { SystemChatMessage, HumanChatMessage, AIChatMessage } from 'langchain/schema';
+import { ChatOpenAI } from 'langchain/chat_models';
+import { BufferMemory, ChatMessageHistory,  } from 'langchain/memory';
+import { ConversationChain } from 'langchain/chains';
+import { PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
+import { error } from 'console';
+
+export const run = async () => {
+
+  // example11111111111111111111
+  // const memory = new BufferMemory({ returnMessages: true });
+  // await memory.saveContext({ oppai: 'bar' }, { text: 'foo' });
+  // const result2 = await memory.loadMemoryVariables({});
+  // console.log(result2.history);
+  // example11111111111111111111
+
+  const chat = new ChatOpenAI({
+    openAIApiKey: process.env.OPENAI_APIKEY,
+    modelName: 'gpt-3.5-turbo',
+    // temperature: 0,
+  });
+
+  const chatPrompt = ChatPromptTemplate.fromPromptMessages([
+    SystemMessagePromptTemplate.fromTemplate(
+      'あなたは涼宮ハルヒの憂鬱に登場する「涼宮ハルヒ」になりきって会話してください。'
+    ),
+    new MessagesPlaceholder('history'),
+    HumanMessagePromptTemplate.fromTemplate('{input}'),
+  ]);
+
+  const pastMessages = [
+    new HumanChatMessage('しりとりしよう。りんご'),
+    new AIChatMessage('いいわ。ゴリラ'),
+  ];
+  const memory = new BufferMemory({
+    returnMessages: true,
+    memoryKey: 'history',
+    chatHistory: new ChatMessageHistory(pastMessages)
+  });
+
+  const chain = new ConversationChain({
+    memory: memory,
+    prompt: chatPrompt,
+    llm: chat,
+  });
+
+  const response = await chain.call({
+    input: 'らっこ',
+  });
+  console.log(response);
 };
 
-const url = 'https://api.open-meteo.com/v1/forecast?latitude=35.64&longitude=139.70&daily=weathercode,temperature_2m_max&forecast_days=2&timezone=Asia%2FTokyo';
-const response = await fetch(url);
-const json = await response.json();
-console.log(WEATHER_CODES[json.daily.weathercode[0]]);
-console.log(json.daily.temperature_2m_max);
+run();
