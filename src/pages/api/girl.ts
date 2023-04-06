@@ -26,10 +26,36 @@ const chat = new ChatOpenAI({
   // temperature: 0,
 });
 
-const saveHistory = async (userId: string, histories: ChatCompletionRequestMessage[]) => {
+const getHistory = async (userId: string): Promise<ChatMessageHistory> => {
   try {
     const db = getDatabase();
-    await set(ref(db, `history/${userId}`), histories);
+    const snapshot = await get(ref(db, `history/${userId}`));
+    if (snapshot.exists()) {
+      const histories = snapshot.val().map((x:{ type: string, text: string }) => {
+        if(x.type === 'human' && x.text !== undefined) {
+          const matchResult = x.text.match(/私のチャット:(.+)\n/);
+          return new HumanChatMessage(matchResult && matchResult[1] || x.text);
+        } else {
+          return new AIChatMessage(x.text);
+        }
+      });
+      return new ChatMessageHistory(histories);
+    } else {
+      return new ChatMessageHistory();
+    }
+  } catch (error) {
+    console.error(error);
+    return new ChatMessageHistory();
+  }
+};
+
+const saveHistory = async (userId: string, histories: ChatMessageHistory) => {
+  try {
+    const db = getDatabase();
+    const data: {type: string, text: string}[] = histories.messages.map((x: BaseChatMessage) => {
+      return {type: x._getType(), text: x.text};
+    });
+    await set(ref(db, `history/${userId}`), data);
     console.log('saved');
   } catch (error) {
     console.error(error);
@@ -43,22 +69,6 @@ const clearHistory = async (userId: string) => {
     console.log('clear');
   } catch (error) {
     console.error(error);
-  }
-};
-  
-const getHistory = async (userId: string): Promise<ChatCompletionRequestMessage[]> => {
-  try {
-    const db = getDatabase();
-    const snapshot = await get(ref(db, `history/${userId}`));
-    if (snapshot.exists()) {
-      const histories: ChatCompletionRequestMessage[] = snapshot.val();
-      return histories;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error(error);
-    return [];
   }
 };
 
@@ -94,20 +104,16 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
     //   botReplyText = histories[0].content;
     // }
   } else {
-    // const histories = await getHistory(userId);
+    const histories = await getHistory(userId);
     const chatPrompt = ChatPromptTemplate.fromPromptMessages([
       SystemMessagePromptTemplate.fromTemplate(BASE_PROMPT_GIRL),
       new MessagesPlaceholder('history'),
       HumanMessagePromptTemplate.fromTemplate('{input}')
     ]);
-    const histories = [
-      new HumanChatMessage('しりとりしよう。りんご'),
-      new AIChatMessage('いいですわ。ゴリラ'),
-    ];
     const memory = new BufferMemory({
       returnMessages: true,
       memoryKey: 'history',
-      chatHistory: new ChatMessageHistory(histories)
+      chatHistory: histories
     });
     const weather = await getWeather();
     const HumanPrompt = await PromptTemplate.fromTemplate(GIRL_HUMAN_TEMPLATE).format({
@@ -124,8 +130,8 @@ const handleMessage = async (event: WebhookEvent): Promise<MessageAPIResponseBas
       llm: chat,
     });
     const response = await chain.call({input: HumanPrompt});
-    console.log(response);
-    botReplyText = response.text;
+    await saveHistory(userId, memory.chatHistory);
+    botReplyText = response.response;
   }
   // LINE返信
   const replyObject: TextMessage = {

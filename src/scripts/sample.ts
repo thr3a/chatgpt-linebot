@@ -8,13 +8,6 @@ import { error } from 'console';
 
 export const run = async () => {
 
-  // example11111111111111111111
-  // const memory = new BufferMemory({ returnMessages: true });
-  // await memory.saveContext({ oppai: 'bar' }, { text: 'foo' });
-  // const result2 = await memory.loadMemoryVariables({});
-  // console.log(result2.history);
-  // example11111111111111111111
-
   const chat = new ChatOpenAI({
     openAIApiKey: process.env.OPENAI_APIKEY,
     modelName: 'gpt-3.5-turbo',
@@ -33,6 +26,8 @@ export const run = async () => {
     new HumanChatMessage('しりとりしよう。りんご'),
     new AIChatMessage('いいわ。ゴリラ'),
   ];
+  // JSON.stringify(memory.chatHistory)
+
   const memory = new BufferMemory({
     returnMessages: true,
     memoryKey: 'history',
