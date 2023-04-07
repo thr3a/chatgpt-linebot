@@ -22,7 +22,7 @@ const client = new Client(lineConfig);
 const chat = new ChatOpenAI({
   openAIApiKey: process.env.OPENAI_APIKEY,
   modelName: 'gpt-3.5-turbo',
-  temperature: 1.1,
+  temperature: 0.7,
 });
 
 const getHistory = async (userId: string): Promise<ChatMessageHistory> => {
