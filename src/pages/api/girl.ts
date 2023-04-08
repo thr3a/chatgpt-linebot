@@ -51,7 +51,7 @@ const getHistory = async (userId: string): Promise<ChatMessageHistory> => {
 const saveHistory = async (userId: string, histories: ChatMessageHistory) => {
   try {
     const db = getDatabase();
-    const data: {type: string, text: string}[] = histories.messages.slice(-5).map((x: BaseChatMessage) => {
+    const data: {type: string, text: string}[] = histories.messages.slice(-8).map((x: BaseChatMessage) => {
       return {type: x._getType(), text: x.text};
     });
     await set(ref(db, `history/${userId}`), data);
