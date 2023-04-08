@@ -1,10 +1,9 @@
 import type { NextPage } from 'next';
-import { Anchor } from '@mantine/core';
 
 const IndexPage: NextPage = () => {
   return (
     <>
-      <Anchor href="/page2">Google</Anchor>
+      <h1>nyaa</h1>
     </>
   );
 };
